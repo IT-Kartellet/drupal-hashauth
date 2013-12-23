@@ -1,0 +1,5 @@
+name = HashAuth
+description = Authenticate users against an external system.
+package = Custom
+core = "6.x"
+version = "6.x-1.0"

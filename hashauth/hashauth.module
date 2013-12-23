@@ -1,0 +1,73 @@
+<?php
+
+function hashauth_init() {
+  global $user;
+  if($user->uid == 0) {
+    #echo "Not authenticated\n";
+
+    if(isset($_GET[hashauth])) {
+      $secret_key = "5iutg76t";
+
+      $string = base64_decode($_GET[hashauth]);
+      if($string) {
+        if(preg_match("/^(?P<hash>[^\<]+)(?P<xml><.+)$/su", $string, $matches)) {
+            // Validate XML
+            $sha1_validation = sha1($matches[xml] . $secret_key);
+            if(strtoupper($sha1_validation) === strtoupper($matches[hash])) {
+                $person = simplexml_load_string($matches[xml]);
+                if($person) {
+                  if(preg_match("/^.{20,60}$/", $person->UserID)) {
+                    user_external_login_register((string)$person->UserID, 'hashauth'); // Sets $user
+                    if($user) {
+                      $userinfo = array(
+                        #'roles' => $roles
+                        'mail' => (string)$person->Email,
+                        'profile_first_name' => (string)$person->FirstName,
+                        'profile_last_name' => (string)$person->LastName,
+                      );
+                      $user = user_save($user, $userinfo);
+                    }
+                    $edit = array();
+                    user_authenticate_finalize($edit);
+                    // Redirect to /
+
+                  } else {
+                    die("User name to short or long");
+                  }
+                    #echo "UserID:".$person->UserID."\n";
+                    #echo "Firstname:".$person->FirstName."\n";
+                    #echo "Email:".$person->Email."\n";
+        
+                } else {
+                    die("Could not parse XML");
+                }
+        
+            } else {
+                echo "string: '$string\n";
+                echo "hash: '$matches[hash]'\n";
+                echo "caluclated hash: '$sha1_validation'\n";
+                #echo "$sha1_validation\n";
+                #echo "$string\n";
+                #print_r($hash);
+                print "xml: '";
+                print_r($matches[xml]);
+                print "'\n";
+                die("Hash not valid");
+            }
+        
+        } else {
+            die("Could not split hash from xml");
+        }
+      
+      } else {
+            die("Could not base64 decode string");
+      }
+
+      #echo "Authenticated\n";
+
+    } else {
+      #echo "Redirect back to external login site\n";
+    }
+  }
+
+}
